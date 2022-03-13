@@ -1,0 +1,102 @@
+# Vigenere square modifeed to include the digits 0-9, a standard whitespace character, and the punctuation characters available in python’s string module !"#$%&'()*+,-./:;<=>?@[\]^_`{|}~.
+import string
+
+available_characters = list(string.ascii_uppercase) + [str(i) for i in range(10)]
+# Add this to available Characters to add the the punctuation characters available in python’s string module and the standard whitespace character. + list(string.punctuation) + [" "]
+
+# two dictionaries we will use to map characters to itegers and vice versa
+base_char_int_mapping = {}
+base_int_char_mapping = {}
+i = 0
+# create a dictionary of characters to integer mappings, we will use ths to make the vinegere square
+for character in available_characters:
+    base_char_int_mapping[character] = i
+    base_int_char_mapping[i] = character
+    i+=1
+
+# determine the max value so we know when we need to roll back to 0
+max_char_value = i-1
+
+# loop through each character and encode the character by adding an
+# offset to it for each letter in the available characters
+offset = 0
+encoder = {}
+decoder = {}
+for key_char in available_characters:
+    key_encoder_lookup = {}
+    key_decoder_lookup = {}
+    for plain_text_char in available_characters:
+        offset_char_int_value = base_char_int_mapping[plain_text_char] + offset
+        if offset_char_int_value > max_char_value:
+            offset_char_int_value = offset_char_int_value - max_char_value - 1
+        offset_character_mapping = base_int_char_mapping[offset_char_int_value]
+        key_encoder_lookup[plain_text_char] = offset_character_mapping
+        key_decoder_lookup[offset_character_mapping] = plain_text_char
+    encoder[key_char] = key_encoder_lookup
+    decoder[key_char] = key_decoder_lookup
+    offset +=1
+
+def encode_message(message, key, encoder):
+    # first lets remove any \n from the message
+    message = message.replace("\n", "Z").upper()
+    message = message.replace(" ", "Z").upper()
+    encoded_message = []
+    key_index = 0
+    # convert key to list and replace any unsupported characters in the key with a _
+    key_as_list = [
+        key_character if key_character in encoder.keys() else "Z" for key_character in list(key)
+    ]
+
+    # iterate thorugh each character in the message we want to encode and encde it
+    for character in message:
+        # need to go back to the start of the key if we reach the end
+        if key_index > len(key_as_list) -1:
+            key_index = 0
+        # figure out which character in the key we need to encode based on
+        key_character = key_as_list[key_index]
+        # first if the character isn't covered lets just encode it as a _
+        if character not in encoder.keys():
+            encoded_message.append("Z")
+        else:
+            encoded_message.append(encoder[key_character][character])
+        key_index+=1
+
+    return "".join(encoded_message)
+
+def decode_message(message, key, decoder):
+    # first lets remove any \n from the message
+    message = message.replace("\n", "Z").upper()
+    message = message.replace(" ","Z").upper()
+    decoded_message = []
+    key_index = 0
+    # convert key to list and replace any unsupported characters in the key with a _
+    key_as_list = [
+        key_character if key_character in decoder.keys() else "Z" for key_character in list(key)
+    ]
+
+    for character in message:
+        # need to go back to the start of the key if we reach the end
+        if key_index > len(key_as_list) -1:
+            key_index = 0
+        # figure out which character in the key we need to encode based on
+        key_character = key_as_list[key_index]
+        # first if the character isn't covered lets just encode it as a _
+        if character not in decoder.keys():
+            decoded_message.append("Z")
+        else:
+            decoded_message.append(decoder[key_character][character])
+        key_index+=1
+
+    return "".join(decoded_message)
+
+message = input("Enter message: ")
+keyphrase = input("Enter key: ")
+keyphrase = keyphrase.replace(" ", "Z").upper()
+# Encode
+encoded_message = encode_message(message, keyphrase, encoder)
+# Decode
+decoded_message = decode_message(encoded_message, keyphrase, decoder)
+# Print
+print(decoded_message)
+print(encoded_message)
+
